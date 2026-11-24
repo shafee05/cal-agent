@@ -1,0 +1,141 @@
+[
+  {
+    "expectContains": "Team sync",
+    "expectOutcome": "booked",
+    "expectTool": "bookSlot",
+    "id": "book-tomorrow",
+    "messages": [
+      "Book tomorrow at 10:00 for Team sync with Priya"
+    ]
+  },
+  {
+    "expectContains": "15:00",
+    "expectOutcome": "listed",
+    "expectTool": "listAvailableSlots",
+    "id": "free-friday",
+    "messages": [
+      "Am I free Friday at 3pm?"
+    ]
+  },
+  {
+    "expectContains": "Demo",
+    "expectOutcome": "booked",
+    "expectTool": "bookSlot",
+    "id": "book-friday",
+    "messages": [
+      "Book Friday 3pm for Demo with Rahul"
+    ]
+  },
+  {
+    "expectContains": "already booked",
+    "expectOutcome": "refused",
+    "expectTool": "bookSlot",
+    "id": "double-booking-refused",
+    "messages": [
+      "Book Tuesday at 10:00 for Standup with Anil"
+    ],
+    "setupBookings": [
+      {
+        "attendee": "Anil",
+        "createdAt": "2026-11-23T09:00:00",
+        "date": "2026-11-24",
+        "id": "bk-eval-101",
+        "time": "10:00",
+        "title": "Standup"
+      }
+    ]
+  },
+  {
+    "expectContains": "past",
+    "expectOutcome": "refused",
+    "expectTool": "bookSlot",
+    "id": "past-date-refused",
+    "messages": [
+      "Book yesterday at 10:00 for Review"
+    ]
+  },
+  {
+    "expectContains": "business hours",
+    "expectOutcome": "refused",
+    "expectTool": "bookSlot",
+    "id": "outside-hours-refused",
+    "messages": [
+      "Book tomorrow at 19:00 for Late call"
+    ]
+  },
+  {
+    "expectContains": "Interview",
+    "expectOutcome": "listed",
+    "expectTool": "listBookings",
+    "id": "list-bookings",
+    "messages": [
+      "What are my bookings?"
+    ],
+    "setupBookings": [
+      {
+        "attendee": "Sara",
+        "createdAt": "2026-11-23T09:00:00",
+        "date": "2026-11-25",
+        "id": "bk-eval-102",
+        "time": "09:00",
+        "title": "Interview"
+      }
+    ]
+  },
+  {
+    "expectContains": "Cancelled",
+    "expectOutcome": "cancelled",
+    "expectTool": "cancelBooking",
+    "id": "cancel-by-id",
+    "messages": [
+      "Cancel booking bk-eval-001"
+    ],
+    "setupBookings": [
+      {
+        "attendee": "Sara",
+        "createdAt": "2026-11-23T09:00:00",
+        "date": "2026-11-25",
+        "id": "bk-eval-001",
+        "time": "09:00",
+        "title": "Interview"
+      }
+    ]
+  },
+  {
+    "expectContains": "Interview",
+    "expectOutcome": "booked",
+    "expectTool": "bookSlot",
+    "id": "book-wednesday",
+    "messages": [
+      "Book Wednesday at 9:00 for Interview with Sara"
+    ]
+  },
+  {
+    "expectContains": "Monday",
+    "expectOutcome": "answered",
+    "expectTool": "getCurrentTime",
+    "id": "current-time",
+    "messages": [
+      "What time is it?"
+    ]
+  },
+  {
+    "expectContains": "date and a time",
+    "expectOutcome": "clarified",
+    "expectTool": "none",
+    "id": "missing-details-clarifies",
+    "messages": [
+      "Book a slot"
+    ]
+  },
+  {
+    "expectContains": "\"Call\" with Anil",
+    "expectOutcome": "listed",
+    "expectTool": "listBookings",
+    "id": "multi-turn-book-then-list",
+    "messages": [
+      "Book tomorrow at 11:00 for Call with Anil",
+      "What are my bookings?"
+    ]
+  }
+]

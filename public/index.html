@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cal — calendar booking agent</title>
+<style>
+  :root { color-scheme: light; --bg: #f6f7f9; --card: #fff; --ink: #1a1d21; --muted: #6b7280; --line: #e5e7eb; --accent: #2563eb; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--ink); }
+  header { max-width: 960px; margin: 0 auto; padding: 28px 16px 8px; }
+  header h1 { margin: 0 0 4px; font-size: 26px; }
+  header p { margin: 0; color: var(--muted); }
+  main { max-width: 960px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { main { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  #log { min-height: 320px; max-height: 52vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 85%; padding: 10px 12px; border-radius: 10px; white-space: pre-wrap; line-height: 1.45; }
+  .msg.user { align-self: flex-end; background: var(--accent); color: #fff; }
+  .msg.agent { align-self: flex-start; background: #eef2ff; }
+  form { display: flex; gap: 8px; margin-top: 12px; }
+  input[type="text"] { flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 15px; }
+  button { padding: 10px 16px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; font-size: 15px; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: wait; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip { border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+  #bookings { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  #bookings li { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px; line-height: 1.4; }
+  #bookings li .id { color: var(--muted); font-size: 12px; }
+  .note { font-size: 13px; color: var(--muted); margin-top: 12px; }
+  h2 { margin: 0; font-size: 17px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cal — calendar booking agent</h1>
+  <p>A small TypeScript agent that checks free slots, books meetings, lists bookings and cancels them. Demo data only — nothing here touches a real calendar.</p>
+</header>
+<main>
+  <section class="card">
+    <div id="log" aria-live="polite"></div>
+    <form id="chat-form">
+      <input id="input" type="text" placeholder="Try: Book tomorrow at 10:00 for Team sync with Priya" autocomplete="off" />
+      <button id="send" type="submit">Send</button>
+    </form>
+    <div class="chips">
+      <button class="chip" type="button">Am I free Friday at 3pm?</button>
+      <button class="chip" type="button">Book tomorrow at 10:00 for Team sync with Priya</button>
+      <button class="chip" type="button">What are my bookings?</button>
+      <button class="chip" type="button">What time is it?</button>
+    </div>
+    <p class="note">No API key is configured for this demo, so the agent runs on its built-in rule-based planner. With an <code>OPENAI_API_KEY</code> set, the same agent loop uses a real LLM for tool-calling. Bookings reset per deployment instance.</p>
+  </section>
+  <aside class="card">
+    <h2>Bookings</h2>
+    <ul id="bookings"></ul>
+  </aside>
+</main>
+<script>
+  const log = document.getElementById("log");
+  const input = document.getElementById("input");
+  const sendBtn = document.getElementById("send");
+  const bookingsList = document.getElementById("bookings");
+
+  function addMsg(text, who) {
+    const div = document.createElement("div");
+    div.className = "msg " + who;
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function renderBookings(bookings) {
+    bookingsList.innerHTML = "";
+    if (!bookings || bookings.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "No bookings yet.";
+      bookingsList.appendChild(li);
+      return;
+    }
+    for (const b of bookings) {
+      const li = document.createElement("li");
+      li.innerHTML = "";
+      const title = document.createElement("strong");
+      title.textContent = b.title;
+      const meta = document.createElement("div");
+      meta.textContent = b.date + " at " + b.time + " — with " + b.attendee;
+      const id = document.createElement("div");
+      id.className = "id";
+      id.textContent = "ID: " + b.id;
+      li.append(title, meta, id);
+      bookingsList.appendChild(li);
+    }
+  }
+
+  async function send(message) {
+    addMsg(message, "user");
+    input.value = "";
+    sendBtn.disabled = true;
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message }),
+      });
+      const data = await res.json();
+      addMsg(data.reply || data.error || "Something went wrong.", "agent");
+      renderBookings(data.bookings || []);
+    } catch (e) {
+      addMsg("Could not reach the agent. Is the server running?", "agent");
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+    }
+  }
+
+  document.getElementById("chat-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const msg = input.value.trim();
+    if (msg) send(msg);
+  });
+  document.querySelectorAll(".chip").forEach((chip) => {
+    chip.addEventListener("click", () => send(chip.textContent));
+  });
+
+  addMsg("Hi, I'm Cal. I can check free slots, book a meeting, list your bookings, or cancel one. What would you like to do?", "agent");
+  // Load current bookings on first paint.
+  fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: "What are my bookings?" }) })
+    .then((r) => r.json())
+    .then((d) => renderBookings(d.bookings || []))
+    .catch(() => renderBookings([]));
+</script>
+</body>
+</html>
